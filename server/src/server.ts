@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import cors from 'cors';
 import sequelize from './config/connection.js';
 import routes from './routes/index.js'; // Make sure this is a .ts file
-import { UserFactory } from './models/user.js';
+//import { initModels } from './models/index.js';
+
 
 const forceDatabaseRefresh = false;
 const app = express();
@@ -15,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // DB Model Initialization
-UserFactory(sequelize);
+//const models = initModels(sequelize);
 
 // Middleware
 app.use(cors());
@@ -27,7 +28,7 @@ const clientBuildPath = path.join(__dirname, "../../client/dist");
 app.use(express.static(clientBuildPath));
 
 // Fallback route for SPA (React Router)
-app.get("*", (req, res) => {
+app.get("*", (_, res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 

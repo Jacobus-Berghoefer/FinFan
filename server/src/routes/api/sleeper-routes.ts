@@ -1,6 +1,6 @@
 // server/src/routes/api/sleeper-routes.ts
 import { Router } from 'express';
-import { getLeagueUsers } from '../../service/sleeperService';
+import { getLeagueUsers } from '../../service/sleeperService.js';
 
 const router = Router();
 
