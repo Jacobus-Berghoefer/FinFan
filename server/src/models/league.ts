@@ -1,30 +1,31 @@
-// server/src/models/user.ts
+
+// server/src/models/league.ts
 import { DataTypes, Sequelize } from 'sequelize';
 
-export const UserFactory = (sequelize: Sequelize) => {
-  const User = sequelize.define('User', {
+export const LeagueFactory = (sequelize: Sequelize) => {
+  const League = sequelize.define('League', {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    sleeper_id: {
+    sleeper_league_id: {
       type: DataTypes.STRING,
       unique: true,
       allowNull: false,
     },
-    display_name: {
+    league_name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
-    avatar: {
+    season_year: {
       type: DataTypes.STRING,
       allowNull: true,
     },
   }, {
-    tableName: 'users',
+    tableName: 'leagues',
     timestamps: false,
   });
 
-  return User;
+  return League;
 };
