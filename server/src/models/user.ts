@@ -1,5 +1,17 @@
 // server/src/models/user.ts
 import { DataTypes, Sequelize } from 'sequelize';
+import type { Model, Optional } from 'sequelize';
+
+export interface IUserAttributes {
+  id: number;
+  sleeper_id: string;
+  display_name: string;
+  avatar?: string | null;
+}
+
+export interface IUserCreationAttributes extends Optional<IUserAttributes, 'id'> {}
+
+export interface IUserInstance extends Model<IUserAttributes, IUserCreationAttributes>, IUserAttributes {}
 
 export const UserFactory = (sequelize: Sequelize) => {
   const User = sequelize.define('User', {
@@ -9,7 +21,7 @@ export const UserFactory = (sequelize: Sequelize) => {
       primaryKey: true,
     },
     sleeper_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.BIGINT,
       unique: true,
       allowNull: false,
     },

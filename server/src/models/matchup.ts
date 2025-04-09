@@ -9,7 +9,7 @@ export const MatchupFactory = (sequelize: Sequelize) => {
       primaryKey: true,
     },
     league_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
     },
     week: {

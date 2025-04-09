@@ -13,7 +13,7 @@ export const BuyInFactory = (sequelize: Sequelize) => {
       allowNull: false,
     },
     league_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
     },
     season: {

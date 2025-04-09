@@ -13,7 +13,7 @@ export const BetFactory = (sequelize: Sequelize) => {
       allowNull: false,
     },
     matchup_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
     },
     pick: {
