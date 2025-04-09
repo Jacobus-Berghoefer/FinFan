@@ -1,5 +1,14 @@
 // server/src/models/buyin.ts
-import { DataTypes, Sequelize } from 'sequelize';
+import { DataTypes, Sequelize, Model } from 'sequelize';
+export interface IBuyInAttributes {
+  id?: number;
+  user_id: number;
+  league_id: number;
+  season: string;
+  paid: boolean;
+}
+
+export interface IBuyInInstance extends Model<IBuyInAttributes>, IBuyInAttributes {}
 
 export const BuyInFactory = (sequelize: Sequelize) => {
   const BuyIn = sequelize.define('BuyIn', {
