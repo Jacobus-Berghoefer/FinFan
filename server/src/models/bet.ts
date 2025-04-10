@@ -1,5 +1,17 @@
 // server/src/models/bet.ts
-import { DataTypes, Sequelize } from 'sequelize';
+import { DataTypes, Sequelize, Model } from 'sequelize';
+
+export interface IBetAttributes {
+  id?: number;
+  user_id: number;
+  matchup_id: number;
+  pick: number;
+  amount: number;
+  week: number;
+  status?: string;
+}
+
+export interface IBetInstance extends Model<IBetAttributes>, IBetAttributes {}
 
 export const BetFactory = (sequelize: Sequelize) => {
   const Bet = sequelize.define('Bet', {

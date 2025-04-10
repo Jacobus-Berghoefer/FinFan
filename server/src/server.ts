@@ -6,6 +6,8 @@ import sequelize from './config/connection.js';
 import routes from './routes/index.js'; // Make sure this is a .ts file
 //import { initModels } from './models/index.js';
 import buyinRoutes from './routes/api/buyin-routes.js';
+import matchupRoutes from './routes/api/matchup-routes.js';
+import betRoutes from './routes/api/bet-routes.js';
 
 
 const forceDatabaseRefresh = false;
@@ -24,6 +26,8 @@ app.use(cors());
 app.use(express.json());
 app.use('/api', routes); // ✅ Only mount API routes under /api
 app.use('/api', buyinRoutes);
+app.use('/api', matchupRoutes);
+app.use('/api', betRoutes);
 
 // Static File Serving
 const clientBuildPath = path.join(__dirname, "../../client/dist");
