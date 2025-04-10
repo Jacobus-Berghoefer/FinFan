@@ -2,9 +2,9 @@
 import { Router } from 'express';
 import { initModels } from '../../models/index.js';
 import sequelize from '../../config/connection.js';
-import type { IBetInstance } from '../../models/bet.js';
 import type { IUserInstance } from '../../models/user.js';
-import { Op } from 'sequelize';
+import { adjustUserBalance } from '../../utils/balance.js';
+import { matchAndActivateGroup } from '../../utils/groupActivation.js';
 
 const router = Router();
 const models = initModels(sequelize);
@@ -28,46 +28,11 @@ router.post('/bets', async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance to place bet' });
     }
 
-    // Find existing bets in this group
-    const existingGroupBets = await models.Bet.findAll({
-      where: {
-        matchup_id,
-        week,
-        group_id,
-        status: { [Op.in]: ['pending', 'active'] },
-      },
-    }) as IBetInstance[];
-
-    // Enforce fixed amount in group
-    const existingAmount = existingGroupBets[0]?.amount;
-    if (existingAmount !== undefined && existingAmount !== amount) {
-      return res.status(400).json({
-        error: `All bets in this group must be for the same amount: ${existingAmount}`,
-      });
-    }
-
-    const opposingExists = existingGroupBets.some(bet => bet.pick !== pick);
-
-    let newStatus: 'pending' | 'active' = 'pending';
-    if (opposingExists) {
-      // Activate all matching group bets
-      await models.Bet.update(
-        { status: 'active' },
-        {
-          where: {
-            matchup_id,
-            week,
-            group_id,
-            status: 'pending',
-          },
-        }
-      );
-      newStatus = 'active';
-    }
+      //Use the helper to handle group matching and status logic
+      const status = await matchAndActivateGroup(models, matchup_id, week, group_id, pick, amount);
 
     // Deduct user's balance
-    user.balance -= amount;
-    await user.save();
+    await adjustUserBalance(user_id, -amount, models);
     console.log(`User ${user.display_name} new balance: ${user.balance}`);
 
     // Create the bet
@@ -78,7 +43,7 @@ router.post('/bets', async (req, res) => {
       amount,
       week,
       group_id,
-      status: newStatus,
+      status,
     });
 
     return res.json(newBet);

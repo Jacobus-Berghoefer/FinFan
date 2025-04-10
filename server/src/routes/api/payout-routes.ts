@@ -4,6 +4,7 @@ import { initModels } from '../../models/index.js';
 import type { IBetInstance } from '../../models/bet.js';
 import type { IPayoutInstance } from '../../models/payout.js';
 import type { IMatchupInstance } from '../../models/matchup.js';
+import { adjustUserBalance } from '../../utils/balance.js';
 
 const router = Router();
 const models = initModels(sequelize);
@@ -33,17 +34,17 @@ router.post('/payouts/:matchupId', async (req, res) => {
     const results: IPayoutInstance[] = [];
 
     for (const [group_id, groupBets] of grouped.entries()) {
-      const totalPool = groupBets.reduce((sum, b) => sum + b.amount, 0);
       const winners = groupBets.filter(b => b.pick === matchup.winner_id);
       const losers = groupBets.filter(b => b.pick !== matchup.winner_id);
 
       if (winners.length === 0) continue;
 
-      const payoutPerWinner = totalPool / winners.length;
+      const totalLosingStake = losers.reduce((sum, b) => sum + b.amount, 0);
+      const payoutPerWinner = totalLosingStake / winners.length;
 
       for (const bet of winners) {
         await models.Bet.update({ status: 'won' }, { where: { id: bet.id } });
-        await models.User.increment('balance', { by: payoutPerWinner, where: { id: bet.user_id } });
+        await adjustUserBalance(bet.user_id, payoutPerWinner, models);
 
         const payout = await models.Payout.create({
           user_id: bet.user_id,
@@ -80,5 +81,22 @@ router.post('/payouts/:matchupId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to process payouts' });
   }
 });
+
+//GET /api/payouts/:userId
+router.get('/payouts/:userId', async (req, res) => {
+    const { userId } = req.params;
+  
+    try {
+      const payouts = await models.Payout.findAll({
+        where: { user_id: userId },
+        order: [['created_at', 'DESC']],
+      });
+  
+      res.json(payouts);
+    } catch (err) {
+      console.error('Error fetching payouts:', err);
+      res.status(500).json({ error: 'Failed to fetch payouts' });
+    }
+  });
 
 export default router;

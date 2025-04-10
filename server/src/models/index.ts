@@ -47,3 +47,5 @@ export function initModels(sequelize: Sequelize) {
     Payout,
   };
 }
+
+export type Models = ReturnType<typeof initModels>;
