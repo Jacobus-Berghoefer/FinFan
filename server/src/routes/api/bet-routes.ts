@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { initModels } from '../../models/index.js';
 import sequelize from '../../config/connection.js';
 import type { IBetInstance } from '../../models/bet.js';
+import type { IUserInstance } from '../../models/user.js';
 import { Op } from 'sequelize';
 
 const router = Router();
@@ -17,8 +18,18 @@ router.post('/bets', async (req, res) => {
   }
 
   try {
-    // Get all existing bets in this group
-    const groupBets = await models.Bet.findAll({
+    // Check user's balance
+    const user = await models.User.findByPk(user_id) as IUserInstance | null;
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.balance < amount) {
+      return res.status(400).json({ error: 'Insufficient balance to place bet' });
+    }
+
+    // Find existing bets in this group
+    const existingGroupBets = await models.Bet.findAll({
       where: {
         matchup_id,
         week,
@@ -27,34 +38,19 @@ router.post('/bets', async (req, res) => {
       },
     }) as IBetInstance[];
 
-    // Determine the initial bet amount (if any bets already exist)
-    let initialAmount: number | null = null;
-    if (groupBets.length > 0) {
-      initialAmount = groupBets[0].amount;
-      if (amount !== initialAmount) {
-        return res.status(400).json({ error: `All bets in this group must be for the same amount: ${initialAmount}` });
-      }
+    // Enforce fixed amount in group
+    const existingAmount = existingGroupBets[0]?.amount;
+    if (existingAmount !== undefined && existingAmount !== amount) {
+      return res.status(400).json({
+        error: `All bets in this group must be for the same amount: ${existingAmount}`,
+      });
     }
 
-    // Count bettors on each side
-    const sideCounts = groupBets.reduce(
-      (acc, bet) => {
-        if (bet.pick === pick) {
-          acc.sameSide += 1;
-        } else {
-          acc.opposingSide += 1;
-        }
-        return acc;
-      },
-      { sameSide: 0, opposingSide: 0 }
-    );
+    const opposingExists = existingGroupBets.some(bet => bet.pick !== pick);
 
-    // Determine status
     let newStatus: 'pending' | 'active' = 'pending';
-    const allSameAmount = groupBets.every(bet => bet.amount === amount);
-
-    if (allSameAmount && sideCounts.opposingSide >= 1) {
-      newStatus = 'active';
+    if (opposingExists) {
+      // Activate all matching group bets
       await models.Bet.update(
         { status: 'active' },
         {
@@ -66,9 +62,15 @@ router.post('/bets', async (req, res) => {
           },
         }
       );
+      newStatus = 'active';
     }
 
-    // Create new bet
+    // Deduct user's balance
+    user.balance -= amount;
+    await user.save();
+    console.log(`User ${user.display_name} new balance: ${user.balance}`);
+
+    // Create the bet
     const newBet = await models.Bet.create({
       user_id,
       matchup_id,

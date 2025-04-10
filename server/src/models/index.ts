@@ -5,6 +5,7 @@ import { LeagueFactory } from './league.js';
 import { BuyInFactory } from './buyin.js';
 import { MatchupFactory } from './matchup.js';
 import { BetFactory } from './bet.js';
+import { PayoutFactory } from './payout.js';
 
 export function initModels(sequelize: Sequelize) {
   const User = UserFactory(sequelize);
@@ -12,6 +13,7 @@ export function initModels(sequelize: Sequelize) {
   const BuyIn = BuyInFactory(sequelize);
   const Matchup = MatchupFactory(sequelize);
   const Bet = BetFactory(sequelize);
+  const Payout = PayoutFactory(sequelize);
 
   // Associations
   User.hasMany(BuyIn, { foreignKey: 'user_id' });
@@ -27,11 +29,21 @@ export function initModels(sequelize: Sequelize) {
   Bet.belongsTo(User, { foreignKey: 'user_id' });
   Bet.belongsTo(Matchup, { foreignKey: 'matchup_id' });
 
+  Payout.belongsTo(User, { foreignKey: 'user_id' });
+  User.hasMany(Payout, { foreignKey: 'user_id' });
+
+  Payout.belongsTo(Matchup, { foreignKey: 'matchup_id' });
+  Matchup.hasMany(Payout, { foreignKey: 'matchup_id' });
+
+  Payout.belongsTo(Bet, { foreignKey: 'bet_id' });
+  Bet.hasOne(Payout, { foreignKey: 'bet_id' });
+
   return {
     User,
     League,
     BuyIn,
     Matchup,
-    Bet
+    Bet,
+    Payout,
   };
 }

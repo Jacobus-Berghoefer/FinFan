@@ -8,6 +8,7 @@ import routes from './routes/index.js'; // Make sure this is a .ts file
 import buyinRoutes from './routes/api/buyin-routes.js';
 import matchupRoutes from './routes/api/matchup-routes.js';
 import betRoutes from './routes/api/bet-routes.js';
+import payoutRoutes from './routes/api/payout-routes.js';
 
 
 const forceDatabaseRefresh = false;
@@ -28,6 +29,7 @@ app.use('/api', routes); // ✅ Only mount API routes under /api
 app.use('/api', buyinRoutes);
 app.use('/api', matchupRoutes);
 app.use('/api', betRoutes);
+app.use('/api', payoutRoutes);
 
 // Static File Serving
 const clientBuildPath = path.join(__dirname, "../../client/dist");

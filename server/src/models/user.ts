@@ -7,6 +7,7 @@ export interface IUserAttributes {
   sleeper_id: string;
   display_name: string;
   avatar?: string | null;
+  balance: number;
 }
 
 export interface IUserCreationAttributes extends Optional<IUserAttributes, 'id'> {}
@@ -32,6 +33,11 @@ export const UserFactory = (sequelize: Sequelize) => {
     avatar: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    balance: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1000, // 0 in production
     },
   }, {
     tableName: 'users',
