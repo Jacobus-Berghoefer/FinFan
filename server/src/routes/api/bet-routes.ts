@@ -2,57 +2,86 @@
 import { Router } from 'express';
 import { initModels } from '../../models/index.js';
 import sequelize from '../../config/connection.js';
+import type { IBetInstance } from '../../models/bet.js';
+import { Op } from 'sequelize';
 
 const router = Router();
 const models = initModels(sequelize);
 
 // POST /api/bets
 router.post('/bets', async (req, res) => {
-  const { user_id, matchup_id, pick, amount, week } = req.body;
+  const { user_id, matchup_id, pick, amount, week, group_id } = req.body;
 
-  if (!user_id || !matchup_id || !pick || !amount || !week) {
+  if (!user_id || !matchup_id || !pick || !amount || !week || !group_id) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    // 1. Find all existing bets for the same matchup, same week, and same amount
-    const existingBets = await models.Bet.findAll({
-      where: { matchup_id, week, amount },
-    });
+    // Get all existing bets in this group
+    const groupBets = await models.Bet.findAll({
+      where: {
+        matchup_id,
+        week,
+        group_id,
+        status: { [Op.in]: ['pending', 'active'] },
+      },
+    }) as IBetInstance[];
 
-    // 2. Check if there are any opposing bets
-    const opposingBets = existingBets.filter((b: any) => b.pick !== pick);
-    const samePickBets = existingBets.filter((b: any) => b.pick === pick);
-
-    let newStatus = 'pending';
-
-    if (opposingBets.length > 0) {
-      // Mark all opposing bets as active
-      await Promise.all(
-        opposingBets.map((b: any) => b.update({ status: 'active' }))
-      );
-
-      // Same side bets should be active too (for fairness grouping)
-      await Promise.all(
-        samePickBets.map((b: any) => b.update({ status: 'active' }))
-      );
-
-      newStatus = 'active';
+    // Determine the initial bet amount (if any bets already exist)
+    let initialAmount: number | null = null;
+    if (groupBets.length > 0) {
+      initialAmount = groupBets[0].amount;
+      if (amount !== initialAmount) {
+        return res.status(400).json({ error: `All bets in this group must be for the same amount: ${initialAmount}` });
+      }
     }
 
-    // 3. Create the new bet
+    // Count bettors on each side
+    const sideCounts = groupBets.reduce(
+      (acc, bet) => {
+        if (bet.pick === pick) {
+          acc.sameSide += 1;
+        } else {
+          acc.opposingSide += 1;
+        }
+        return acc;
+      },
+      { sameSide: 0, opposingSide: 0 }
+    );
+
+    // Determine status
+    let newStatus: 'pending' | 'active' = 'pending';
+    const allSameAmount = groupBets.every(bet => bet.amount === amount);
+
+    if (allSameAmount && sideCounts.opposingSide >= 1) {
+      newStatus = 'active';
+      await models.Bet.update(
+        { status: 'active' },
+        {
+          where: {
+            matchup_id,
+            week,
+            group_id,
+            status: 'pending',
+          },
+        }
+      );
+    }
+
+    // Create new bet
     const newBet = await models.Bet.create({
       user_id,
       matchup_id,
       pick,
       amount,
       week,
+      group_id,
       status: newStatus,
     });
 
-    return res.status(201).json(newBet);
-  } catch (error) {
-    console.error('Error placing bet:', error);
+    return res.json(newBet);
+  } catch (err) {
+    console.error('Error placing bet:', err);
     return res.status(500).json({ error: 'Failed to place bet' });
   }
 });

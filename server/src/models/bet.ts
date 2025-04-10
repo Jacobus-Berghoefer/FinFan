@@ -29,7 +29,7 @@ export const BetFactory = (sequelize: Sequelize) => {
       allowNull: false,
     },
     pick: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     amount: {
@@ -41,6 +41,10 @@ export const BetFactory = (sequelize: Sequelize) => {
       allowNull: false,
     },
     status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    group_id: {
       type: DataTypes.STRING,
       allowNull: true,
     },
