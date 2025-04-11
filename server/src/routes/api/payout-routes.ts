@@ -5,6 +5,8 @@ import type { IBetInstance } from '../../models/bet.js';
 import type { IPayoutInstance } from '../../models/payout.js';
 import type { IMatchupInstance } from '../../models/matchup.js';
 import { adjustUserBalance } from '../../utils/balance.js';
+import { BetStatus, PayoutStatus } from '../../utils/constants.js';
+import { processPayoutsForMatchup } from '../../utils/payoutProcessor.js';
 
 const router = Router();
 const models = initModels(sequelize);
@@ -20,16 +22,16 @@ router.post('/payouts/:matchupId', async (req, res) => {
     }
 
     const activeBets = await models.Bet.findAll({
-      where: { matchup_id: matchupId, status: 'active' },
+      where: { matchup_id: matchupId, status: BetStatus.ACTIVE },
     }) as IBetInstance[];
 
     const grouped = new Map<string, IBetInstance[]>();
     for (const bet of activeBets) {
-        if (bet.group_id) {
-            if (!grouped.has(bet.group_id)) grouped.set(bet.group_id, []);
-            grouped.get(bet.group_id)!.push(bet);
-          }
-        }
+      if (bet.group_id) {
+        if (!grouped.has(bet.group_id)) grouped.set(bet.group_id, []);
+        grouped.get(bet.group_id)!.push(bet);
+      }
+    }
 
     const results: IPayoutInstance[] = [];
 
@@ -43,7 +45,7 @@ router.post('/payouts/:matchupId', async (req, res) => {
       const payoutPerWinner = totalLosingStake / winners.length;
 
       for (const bet of winners) {
-        await models.Bet.update({ status: 'won' }, { where: { id: bet.id } });
+        await models.Bet.update({ status: BetStatus.WON }, { where: { id: bet.id } });
         await adjustUserBalance(bet.user_id, payoutPerWinner, models);
 
         const payout = await models.Payout.create({
@@ -51,7 +53,7 @@ router.post('/payouts/:matchupId', async (req, res) => {
           matchup_id: parseInt(matchupId),
           bet_id: bet.id,
           amount: payoutPerWinner,
-          status: 'won',
+          status: PayoutStatus.WON,
           created_at: new Date(),
           group_id,
         });
@@ -60,14 +62,14 @@ router.post('/payouts/:matchupId', async (req, res) => {
       }
 
       for (const bet of losers) {
-        await models.Bet.update({ status: 'lost' }, { where: { id: bet.id } });
+        await models.Bet.update({ status: BetStatus.LOST }, { where: { id: bet.id } });
 
         const payout = await models.Payout.create({
           user_id: bet.user_id,
           matchup_id: parseInt(matchupId),
           bet_id: bet.id,
           amount: 0,
-          status: 'lost',
+          status: PayoutStatus.LOST,
           created_at: new Date(),
         });
 
@@ -82,21 +84,21 @@ router.post('/payouts/:matchupId', async (req, res) => {
   }
 });
 
-//GET /api/payouts/:userId
+// GET /api/payouts/:userId
 router.get('/payouts/:userId', async (req, res) => {
-    const { userId } = req.params;
-  
-    try {
-      const payouts = await models.Payout.findAll({
-        where: { user_id: userId },
-        order: [['created_at', 'DESC']],
-      });
-  
-      res.json(payouts);
-    } catch (err) {
-      console.error('Error fetching payouts:', err);
-      res.status(500).json({ error: 'Failed to fetch payouts' });
-    }
-  });
+  const { userId } = req.params;
+
+  try {
+    const payouts = await models.Payout.findAll({
+      where: { user_id: userId },
+      order: [['created_at', 'DESC']],
+    });
+
+    res.json(payouts);
+  } catch (err) {
+    console.error('Error fetching payouts:', err);
+    res.status(500).json({ error: 'Failed to fetch payouts' });
+  }
+});
 
 export default router;

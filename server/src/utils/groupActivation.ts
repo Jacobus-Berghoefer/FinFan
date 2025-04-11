@@ -1,10 +1,10 @@
-// utils/groupActivation.ts
 import type { IBetInstance } from '../models/bet.js';
 import type { Models } from '../models/index.js';
 import { Op } from 'sequelize';
+import { BetStatus } from './constants.js'; 
 
 export const matchAndActivateGroup = async (
-  models: Models,                    
+  models: Models,
   matchup_id: number,
   week: number,
   group_id: string,
@@ -16,7 +16,7 @@ export const matchAndActivateGroup = async (
       matchup_id,
       week,
       group_id,
-      status: { [Op.in]: ['pending', 'active'] },
+      status: { [Op.in]: [BetStatus.PENDING, BetStatus.ACTIVE] },
     },
   }) as IBetInstance[];
 
@@ -29,18 +29,18 @@ export const matchAndActivateGroup = async (
 
   if (opposingExists) {
     await models.Bet.update(
-      { status: 'active' },
+      { status: BetStatus.ACTIVE },
       {
         where: {
           matchup_id,
           week,
           group_id,
-          status: 'pending',
+          status: BetStatus.PENDING,
         },
       }
     );
-    return 'active';
+    return BetStatus.ACTIVE;
   }
 
-  return 'pending';
+  return BetStatus.PENDING;
 };
