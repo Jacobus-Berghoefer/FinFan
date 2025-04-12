@@ -18,7 +18,14 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path aliases */
+    "baseUrl": ".", // ✅ Root is project folder
+    "paths": {
+      "@/*": ["src/*"] // ✅ @ maps to src/
+    }
+    
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
