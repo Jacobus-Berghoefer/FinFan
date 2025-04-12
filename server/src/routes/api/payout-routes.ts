@@ -4,6 +4,7 @@ import sequelize from '../../config/connection.js';
 import type { IMatchupInstance } from '../../models/matchup.js';
 import type { IBetInstance } from '../../models/bet.js';
 import { BetStatus } from '../../utils/constants.js';
+import { processPayoutsForMatchup } from '../../utils/payoutProcessor.js';
 
 const router = Router();
 const models = initModels(sequelize);
@@ -42,5 +43,17 @@ router.patch('/matchup/:matchupId/winner/:winnerId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to set matchup winner' });
   }
 });
+
+router.post('/payouts/:matchupId', async (req, res) => {
+    const { matchupId } = req.params;
+  
+    try {
+      const { matchup, results } = await processPayoutsForMatchup(models, Number(matchupId));
+      return res.json({ matchup_id: matchup.id, winner_id: matchup.winner_id, updated_bets: results });
+    } catch (err) {
+      console.error('Error processing payouts:', err);
+      return res.status(500).json({ error: 'Failed to process payouts' });
+    }
+  });
 
 export default router;

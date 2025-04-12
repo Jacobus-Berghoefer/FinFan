@@ -9,6 +9,7 @@ import buyinRoutes from './routes/api/buyin-routes.js';
 import matchupRoutes from './routes/api/matchup-routes.js';
 import betRoutes from './routes/api/bet-routes.js';
 import payoutRoutes from './routes/api/payout-routes.js';
+import sideBetRoutes from './routes/api/sidebet-routes.js';
 
 
 const forceDatabaseRefresh = false;
@@ -30,6 +31,7 @@ app.use('/api', buyinRoutes);
 app.use('/api', matchupRoutes);
 app.use('/api', betRoutes);
 app.use('/api', payoutRoutes);
+app.use('/api', sideBetRoutes);
 
 // Static File Serving
 const clientBuildPath = path.join(__dirname, "../../client/dist");

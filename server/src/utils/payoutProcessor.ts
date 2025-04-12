@@ -5,6 +5,7 @@ import type { IBetInstance } from '../models/bet.js';
 import type { IPayoutInstance } from '../models/payout.js';
 import { adjustUserBalance } from './balance.js';
 import { BetStatus, PayoutStatus } from './constants.js';
+import { updateStreaks } from './updateStreaks.js';
 
 export const processPayoutsForMatchup = async (
   models: Models,
@@ -69,6 +70,8 @@ export const processPayoutsForMatchup = async (
 
       results.push(payout);
     }
+
+    await updateStreaks(models, matchup, winners, losers);
   }
 
   return { matchup, results };
