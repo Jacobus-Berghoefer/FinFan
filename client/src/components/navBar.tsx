@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
   LayoutDashboard,
@@ -12,8 +12,14 @@ import {
 } from 'lucide-react';
 
 export default function NavBar() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    setUser(null); // Clear user from context
+    navigate("/dashboard"); // Redirect to dashboard
+  };
 
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> },
@@ -47,15 +53,34 @@ export default function NavBar() {
         ))}
       </nav>
 
-      {/* Footer / Profile with CircleUser and Settings icon */}
-      <div className="flex items-center justify-between border-t border-gray-600 pt-4 mt-6">
-        <div className="flex items-center space-x-2">
-          <CircleUser size={22} />
-          <span className="text-sm font-semibold">
-            {user?.display_name || 'Profile'}
-          </span>
-        </div>
-        <Settings size={18} className="cursor-pointer hover:text-teal-300 transition" />
+      {/* Auth Section */}
+      <div className="flex flex-col gap-2 border-t border-gray-600 pt-4 mt-6">
+        {user ? (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CircleUser size={22} />
+                <span className="text-sm font-semibold">{user.display_name}</span>
+              </div>
+              <Settings size={18} className="cursor-pointer hover:text-teal-300 transition" />
+            </div>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-red-400 hover:underline text-left mt-1"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <div className="flex justify-between">
+            <Link to="/signup" className="text-sm text-teal-400 hover:underline">
+              Signup
+            </Link>
+            <Link to="/login" className="text-sm text-teal-400 hover:underline">
+              Login
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

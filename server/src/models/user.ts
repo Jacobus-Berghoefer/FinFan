@@ -8,6 +8,9 @@ export interface IUserAttributes {
   display_name: string;
   avatar?: string | null;
   balance: number;
+  password: string;
+  sleeper_linked: boolean;
+  username: string;
 }
 
 export interface IUserCreationAttributes extends Optional<IUserAttributes, 'id'> {}
@@ -24,7 +27,7 @@ export const UserFactory = (sequelize: Sequelize) => {
     sleeper_id: {
       type: DataTypes.BIGINT,
       unique: true,
-      allowNull: false,
+      allowNull: true,
     },
     display_name: {
       type: DataTypes.STRING,
@@ -38,6 +41,19 @@ export const UserFactory = (sequelize: Sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1000, // 0 in production
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    sleeper_linked: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    username: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
   }, {
     tableName: 'users',

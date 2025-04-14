@@ -2,8 +2,11 @@ import { createContext } from "react";
 
 export interface User {
   id: number;
+  username: string;
   display_name: string;
-  avatar: string;
+  avatar: string | null;
+  sleeper_id: string | null;
+  sleeper_linked: boolean;
 }
 
 export interface AuthContextType {
