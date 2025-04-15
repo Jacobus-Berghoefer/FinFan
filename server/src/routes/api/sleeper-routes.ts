@@ -59,39 +59,34 @@ router.get('/league/:leagueId/users', async (req, res) => {
 });
 
 // PATCH /api/sleeper/link
-router.patch('/link', async (req, res) => {
-  const { sleeperUsername, userId, overwriteDisplayName = false } = req.body;
+router.post('/link', async (req, res) => {
+  const { sleeper_id, avatar, display_name } = req.body;
+  const userSession = req.cookies?.session;
 
-  if (!sleeperUsername || !userId) {
+  if (!sleeper_id || !userSession?.id) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    const response = await fetch(`https://api.sleeper.app/v1/user/${sleeperUsername}`);
-    if (!response.ok) {
-      return res.status(404).json({ error: 'Sleeper user not found' });
+    const user = await models.User.findByPk(userSession.id) as IUserInstance | null;
+
+    if (!user) {
+      return res.status(404).json({ error: 'Local user not found' });
     }
 
-    const sleeperData = await response.json();
-    const user = await models.User.findByPk(userId) as IUserInstance | null;
-
-    if (!user) return res.status(404).json({ error: 'Local user not found' });
-
-    user.sleeper_id = sleeperData.user_id;
-    user.avatar = sleeperData.avatar;
+    user.sleeper_id = sleeper_id;
+    user.avatar = avatar || null;
     user.sleeper_linked = true;
-
-    if (overwriteDisplayName) {
-      user.display_name = sleeperData.display_name;
-    }
+    user.display_name = display_name;
 
     await user.save();
 
     return res.json({
-      message: 'Sleeper account linked successfully',
-      sleeper_id: user.sleeper_id,
+      id: user.id,
+      username: user.username,
       display_name: user.display_name,
       avatar: user.avatar,
+      sleeper_id: user.sleeper_id,
       sleeper_linked: user.sleeper_linked,
     });
   } catch (err) {
