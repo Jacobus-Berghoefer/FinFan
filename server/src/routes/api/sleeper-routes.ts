@@ -58,4 +58,46 @@ router.get('/league/:leagueId/users', async (req, res) => {
   }
 });
 
+// PATCH /api/sleeper/link
+router.patch('/link', async (req, res) => {
+  const { sleeperUsername, userId, overwriteDisplayName = false } = req.body;
+
+  if (!sleeperUsername || !userId) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const response = await fetch(`https://api.sleeper.app/v1/user/${sleeperUsername}`);
+    if (!response.ok) {
+      return res.status(404).json({ error: 'Sleeper user not found' });
+    }
+
+    const sleeperData = await response.json();
+    const user = await models.User.findByPk(userId) as IUserInstance | null;
+
+    if (!user) return res.status(404).json({ error: 'Local user not found' });
+
+    user.sleeper_id = sleeperData.user_id;
+    user.avatar = sleeperData.avatar;
+    user.sleeper_linked = true;
+
+    if (overwriteDisplayName) {
+      user.display_name = sleeperData.display_name;
+    }
+
+    await user.save();
+
+    return res.json({
+      message: 'Sleeper account linked successfully',
+      sleeper_id: user.sleeper_id,
+      display_name: user.display_name,
+      avatar: user.avatar,
+      sleeper_linked: user.sleeper_linked,
+    });
+  } catch (err) {
+    console.error('Error linking Sleeper account:', err);
+    return res.status(500).json({ error: 'Failed to link Sleeper account' });
+  }
+});
+
 export default router;

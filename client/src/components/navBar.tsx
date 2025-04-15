@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import LinkSleeperModal from './linkSleeperModal';
 import {
   LayoutDashboard,
   Users,
@@ -39,6 +41,8 @@ export default function NavBar() {
     { label: 'Collections', path: '/collections', icon: <DollarSign size={18} /> },
   ];
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <div className="w-60 h-screen bg-[#1e1f25] text-white flex flex-col justify-between px-4 py-6 shadow-md">
       {/* Logo / Title */}
@@ -73,12 +77,24 @@ export default function NavBar() {
               </div>
               <Settings size={18} className="cursor-pointer hover:text-teal-300 transition" />
             </div>
+
+            {!user.sleeper_linked && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="text-sm text-teal-400 hover:underline text-left mt-1"
+              >
+                Link Sleeper Account
+              </button>
+            )}
+
             <button
               onClick={handleLogout}
               className="text-sm text-red-400 hover:underline text-left mt-1"
             >
               Logout
             </button>
+
+            <LinkSleeperModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
           </>
         ) : (
           <div className="flex justify-between">
