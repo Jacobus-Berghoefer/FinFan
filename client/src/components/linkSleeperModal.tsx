@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
 
 interface SleeperUser {
   display_name: string;
@@ -20,11 +21,9 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [sleeperUser, setSleeperUser] = useState<SleeperUser | null>(null);
   const [useSleeperName, setUseSleeperName] = useState(true);
-  const [error, setError] = useState("");
 
   const fetchSleeperData = async () => {
     setLoading(true);
-    setError("");
 
     try {
       const res = await fetch(`https://api.sleeper.app/v1/user/${sleeperUsername}`);
@@ -34,7 +33,6 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
 
       setSleeperUser(data);
     } catch (err) {
-      setError("Sleeper user not found. Please check your username.");
       setSleeperUser(null);
     } finally {
       setLoading(false);
@@ -43,25 +41,33 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
 
   const handleLinkAccount = async () => {
     if (!user || !sleeperUser) return;
-
-    const res = await fetch("/api/sleeper/link", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        sleeper_id: sleeperUser.user_id,
-        avatar: sleeperUser.avatar,
-        display_name: useSleeperName ? sleeperUser.display_name : user.display_name,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      setUser(data); // Update global context
-      onClose();     // Close modal
-    } else {
-      setError(data.error || "Failed to link Sleeper account.");
+  
+    const toastId = toast.loading("Linking account...");
+  
+    try {
+      const res = await fetch("/api/sleeper/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          sleeper_id: sleeperUser.user_id,
+          avatar: sleeperUser.avatar,
+          display_name: useSleeperName ? sleeperUser.display_name : user.display_name,
+        }),
+      });
+  
+      const data = await res.json();
+  
+      if (res.ok) {
+        toast.success("Sleeper account linked!", { id: toastId });
+        setUser(data);
+        onClose();
+      } else {
+        toast.error(data.error || "Failed to link account", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Something went wrong!", { id: toastId });
+      console.error(err);
     }
   };
 
@@ -134,7 +140,6 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
             </>
           )}
 
-          {error && <p className="mt-4 text-sm text-red-400 text-center">{error}</p>}
         </Dialog.Panel>
       </div>
     </Dialog>

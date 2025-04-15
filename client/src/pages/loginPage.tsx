@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const { setUser } = useAuth();
   const navigate = useNavigate();
 
@@ -16,7 +16,8 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
+
+    const toastId = toast.loading("Logging in...");
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -27,6 +28,7 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
+
       if (res.ok) {
         setUser({
           id: data.id,
@@ -36,13 +38,14 @@ export default function LoginPage() {
           sleeper_id: data.sleeper_id || null,
           sleeper_linked: data.sleeper_linked || false,
         });
+        toast.success("Login successful!", { id: toastId });
         navigate("/dashboard");
       } else {
-        setMessage(data.error || "Invalid login");
+        toast.error(data.error || "Invalid login", { id: toastId });
       }
     } catch (err) {
       console.error(err);
-      setMessage("Network error");
+      toast.error("Network error", { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -82,9 +85,6 @@ export default function LoginPage() {
           {loading ? "Logging in..." : "Log In"}
         </button>
       </form>
-      {message && (
-        <p className="mt-4 text-sm text-center text-gray-300">{message}</p>
-      )}
     </div>
   );
 }

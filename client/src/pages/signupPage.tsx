@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth"; // Make sure this points to your actual hook
+import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
 
 export default function SignupForm() {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -36,17 +37,19 @@ export default function SignupForm() {
             sleeper_id: null,
             sleeper_linked: false,
         });
-        navigate("/dashboard"); // Redirect to dashboard after signup
+
+        toast.success(`Welcome, ${data.username}!`);
+        navigate("/dashboard");
       } else {
-        setMessage(data.error || "Something went wrong");
+        toast.error(data.error || "Signup failed");
       }
-    } catch (err) {
-      console.error(err);
-      setMessage("Network error");
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch (err) {
+        console.error(err);
+        toast.error("Network error");
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <div className="max-w-md mx-auto mt-12 bg-[#1f1f22] p-6 rounded-lg shadow-lg">

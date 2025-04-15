@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import LinkSleeperModal from './linkSleeperModal';
+import toast from "react-hot-toast";
 import {
   LayoutDashboard,
   Users,
@@ -19,13 +20,18 @@ export default function NavBar() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    const toastId = toast.loading("Logging out...");
+  
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
+  
+      toast.success("You’ve been logged out", { id: toastId });
     } catch (err) {
       console.error("Logout failed:", err);
+      toast.error("Logout failed", { id: toastId });
     } finally {
       setUser(null); // Always clear context even if request fails
       navigate("/dashboard");
