@@ -77,10 +77,13 @@ export default function NavBar() {
         {user ? (
           <>
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <CircleUser size={22} />
-                <span className="text-sm font-semibold">{user.display_name}</span>
-              </div>
+            <button
+              onClick={() => navigate("/my-profile")}
+              className="flex items-center space-x-2 hover:text-teal-300 transition"
+            >
+              <CircleUser size={22} />
+              <span className="text-sm font-semibold">{user.display_name}</span>
+            </button>
               <Settings size={18} className="cursor-pointer hover:text-teal-300 transition" />
             </div>
 

@@ -4,6 +4,7 @@ import NavBar from "./components/navBar";
 import Dashboard from "./pages/dashboard";
 import SignupPage from "./pages/signupPage";
 import LoginPage from "./pages/loginPage";
+import MyProfile from "./pages/myProfile";
 //import Matchups from "./pages/matchupBet";
 import PrivateRoute from "./components/privateRoute";
 
@@ -22,6 +23,7 @@ function App() {
 
             {/* Private routes */}
             <Route element={<PrivateRoute />}>
+            <Route path="/my-profile" element={<MyProfile />} />
               {/* <Route path="/matchups" element={<Matchups />} /> */}
             </Route>
 
