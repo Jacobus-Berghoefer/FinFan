@@ -90,6 +90,7 @@ router.post('/login', async (req, res) => {
       sleeper_id: user.sleeper_id,
       avatar: user.avatar,
       sleeper_linked: user.sleeper_linked,
+      sleeper_display_name: user.sleeper_display_name,
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -98,16 +99,35 @@ router.post('/login', async (req, res) => {
 });
 
 // server/src/routes/auth-routes.ts
-router.get('/session', (req, res) => {
+router.get('/session', async (req, res) => {
   const session = req.cookies.session;
-  if (!session) {
+  if (!session || !session.id) {
     return res.status(401).json({ authenticated: false });
   }
 
-  return res.json({
-    authenticated: true,
-    user: session,
-  });
+  try {
+    const user = await models.User.findByPk(session.id) as IUserInstance | null;
+
+    if (!user) {
+      return res.status(401).json({ authenticated: false });
+    }
+
+    return res.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        display_name: user.display_name,
+        sleeper_id: user.sleeper_id,
+        avatar: user.avatar,
+        sleeper_linked: user.sleeper_linked,
+        sleeper_display_name: user.sleeper_display_name,
+      },
+    });
+  } catch (err) {
+    console.error("Session fetch failed:", err);
+    return res.status(500).json({ error: "Failed to retrieve session user" });
+  }
 });
 
 // POST /api/auth/logout

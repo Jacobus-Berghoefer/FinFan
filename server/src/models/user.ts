@@ -11,6 +11,7 @@ export interface IUserAttributes {
   password: string;
   sleeper_linked: boolean;
   username: string;
+  sleeper_display_name?: string | null;
 }
 
 export interface IUserCreationAttributes extends Optional<IUserAttributes, 'id'> {}
@@ -54,6 +55,10 @@ export const UserFactory = (sequelize: Sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
+    },
+    sleeper_display_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   }, {
     tableName: 'users',

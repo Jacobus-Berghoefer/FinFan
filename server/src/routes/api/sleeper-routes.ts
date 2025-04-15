@@ -77,6 +77,12 @@ router.post('/link', async (req, res) => {
     user.sleeper_id = sleeper_id;
     user.avatar = avatar || null;
     user.sleeper_linked = true;
+
+    // 🔐 Store the original Sleeper name permanently in its own column
+    user.sleeper_display_name = display_name;
+
+    // 🧠 Optionally overwrite the display_name if the user chose to use Sleeper name
+    // NOTE: your frontend sends the `display_name` value already chosen, so we just save it
     user.display_name = display_name;
 
     await user.save();
@@ -88,6 +94,7 @@ router.post('/link', async (req, res) => {
       avatar: user.avatar,
       sleeper_id: user.sleeper_id,
       sleeper_linked: user.sleeper_linked,
+      sleeper_display_name: user.sleeper_display_name,
     });
   } catch (err) {
     console.error('Error linking Sleeper account:', err);

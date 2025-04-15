@@ -36,6 +36,7 @@ export default function SignupForm() {
             avatar: null,
             sleeper_id: null,
             sleeper_linked: false,
+            sleeper_display_name: data.user.sleeper_display_name || null,
         });
 
         toast.success(`Welcome, ${data.username}!`);

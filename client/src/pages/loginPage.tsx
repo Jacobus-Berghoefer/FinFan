@@ -37,6 +37,7 @@ export default function LoginPage() {
           avatar: data.avatar || null,
           sleeper_id: data.sleeper_id || null,
           sleeper_linked: data.sleeper_linked || false,
+          sleeper_display_name: data.sleeper_display_name || null,
         });
         toast.success("Login successful!", { id: toastId });
         navigate("/dashboard");

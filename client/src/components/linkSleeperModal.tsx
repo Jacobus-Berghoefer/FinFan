@@ -53,6 +53,7 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
           sleeper_id: sleeperUser.user_id,
           avatar: sleeperUser.avatar,
           display_name: useSleeperName ? sleeperUser.display_name : user.display_name,
+          sleeper_display_name: sleeperUser.display_name,
         }),
       });
   
@@ -60,7 +61,10 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
   
       if (res.ok) {
         toast.success("Sleeper account linked!", { id: toastId });
-        setUser(data);
+        setUser({
+          ...data,
+          sleeper_display_name: data.sleeper_display_name ?? user.sleeper_display_name,
+        });
         onClose();
       } else {
         toast.error(data.error || "Failed to link account", { id: toastId });
