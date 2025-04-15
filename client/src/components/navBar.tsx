@@ -16,9 +16,18 @@ export default function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    setUser(null); // Clear user from context
-    navigate("/dashboard"); // Redirect to dashboard
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setUser(null); // Always clear context even if request fails
+      navigate("/dashboard");
+    }
   };
 
   const navItems = [

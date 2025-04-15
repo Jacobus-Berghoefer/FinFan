@@ -32,6 +32,18 @@ router.post('/signup', async (req, res) => {
       sleeper_id: null,
     }) as IUserInstance;
 
+    // 👇 Set cookie for persistent session
+    res.cookie('session', {
+      id: newUser.id,
+      username: newUser.username,
+      display_name: newUser.display_name,
+    }, {
+      httpOnly: true,
+      secure: false, // true in production
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return res.status(201).json({
       id: newUser.id,
       username: newUser.username,
@@ -59,7 +71,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Later you'll add JWT/token logic here
+    // ✅ Set secure HTTP-only cookie
+    res.cookie('session', {
+      id: user.id,
+      username: user.username,
+      display_name: user.display_name,
+    }, {
+      httpOnly: true,
+      secure: false, // Set to true in production (requires HTTPS)
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    });
 
     return res.json({
       id: user.id,
@@ -73,6 +95,29 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// server/src/routes/auth-routes.ts
+router.get('/session', (req, res) => {
+  const session = req.cookies.session;
+  if (!session) {
+    return res.status(401).json({ authenticated: false });
+  }
+
+  return res.json({
+    authenticated: true,
+    user: session,
+  });
+});
+
+// POST /api/auth/logout
+router.post('/logout', (_req, res) => {
+  res.clearCookie('session', {
+    httpOnly: true,
+    secure: false, // Set to true in production
+    sameSite: 'lax',
+  });
+  return res.json({ success: true, message: 'Logged out successfully' });
 });
 
 export default router;
