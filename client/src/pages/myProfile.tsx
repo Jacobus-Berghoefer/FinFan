@@ -4,6 +4,11 @@ import LinkSleeperModal from "../components/linkSleeperModal";
 import { Dialog } from "@headlessui/react";
 import toast from "react-hot-toast";
 
+type SleeperLeague = {
+  league_id: string;
+  name: string;
+};
+
 export default function MyProfile() {
   const { user, setUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -12,6 +17,11 @@ export default function MyProfile() {
 
   const [isUsingAppUsername, setIsUsingAppUsername] = useState(false);
   const [isUsingSleeperName, setIsUsingSleeperName] = useState(false);
+
+  const [leagues, setLeagues] = useState<SleeperLeague[]>([]);
+  const [isLeagueModalOpen, setIsLeagueModalOpen] = useState(false);
+  const [linkedLeagueIds, setLinkedLeagueIds] = useState<string[]>([]);
+  const [selectedLeagueIds, setSelectedLeagueIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -71,6 +81,111 @@ export default function MyProfile() {
     } finally {
       setConfirmModalOpen(false);
       setSelectedName(null);
+    }
+  };
+
+  const handleUnlinkSleeper = async () => {
+    const toastId = toast.loading("Unlinking Sleeper account...");
+  
+    try {
+      const res = await fetch("/api/user/unlink-sleeper", {
+        method: "DELETE",
+        credentials: "include",
+      });
+  
+      if (res.ok) {
+        const userRes = await fetch("/api/auth/session", {
+          credentials: "include",
+        });
+        const freshUser = await userRes.json();
+        
+        setUser(freshUser);
+
+        // 🔁 Immediately update toggle states
+        setIsUsingAppUsername(true);
+        setIsUsingSleeperName(false);
+
+        toast.success("Sleeper account unlinked", { id: toastId });
+      } else {
+        toast.error("Failed to unlink Sleeper account", { id: toastId });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error", { id: toastId });
+    }
+  };
+
+  const fetchUserLeagues = async () => {
+    try {
+      const res = await fetch("/api/sleeper/user/leagues", {
+        credentials: "include",
+      });
+      const data = await res.json();
+  
+      if (res.ok) {
+        setLeagues(data);
+  
+        // If your user model tracks the currently linked league,
+        // pull that into state too.
+        const linkedRes = await fetch("/api/user/linked-leagues", {
+          credentials: "include",
+        });
+        if (linkedRes.ok) {
+          const linked = await linkedRes.json();
+          setLinkedLeagueIds(linked.map((l: { sleeper_league_id: string }) => l.sleeper_league_id));
+        }
+      } else {
+        console.error("Error fetching leagues:", data.error);
+      }
+    } catch (err) {
+      console.error("Failed to fetch leagues", err);
+    }
+  };
+
+  const handleLinked = async () => {
+    await fetchUserLeagues();
+    setIsLeagueModalOpen(true);
+  };
+
+  const toggleLeagueSelection = (leagueId: string) => {
+    setSelectedLeagueIds((prev) =>
+      prev.includes(leagueId)
+        ? prev.filter((id) => id !== leagueId) // Unselect
+        : [...prev, leagueId] // Select
+    );
+  };
+  
+  const isLeagueSelected = (leagueId: string) =>
+    selectedLeagueIds.includes(leagueId) || linkedLeagueIds.includes(leagueId);
+
+  const handleConfirmLeagueLinks = async () => {
+    const toastId = toast.loading("Linking leagues...");
+  
+    try {
+      const results = await Promise.all(
+        selectedLeagueIds.map((id) =>
+          fetch("/api/user/link-league", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ league_id: id }),
+          })
+        )
+      );
+  
+      const anyFailed = results.some((res) => !res.ok);
+      if (anyFailed) {
+        toast.error("Some leagues failed to link", { id: toastId });
+      } else {
+        toast.success("Leagues linked successfully!", { id: toastId });
+      }
+  
+      await fetchUserLeagues(); // Refresh league state
+      setSelectedLeagueIds([]);
+      setIsLeagueModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Linking failed", { id: toastId });
     }
   };
 
@@ -135,38 +250,131 @@ export default function MyProfile() {
                 />
                 <span>Use <strong>{user.sleeper_display_name ?? user.display_name}</strong> as display name</span>
             </label>
+
+            <button
+                onClick={handleUnlinkSleeper}
+                className="mt-3 text-sm text-red-500 hover:underline"
+              >
+                Unlink Sleeper Account
+            </button>
           </>
         )}
       </div>
+
+      {leagues.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-2">Select a League</h2>
+          <ul className="space-y-2 text-sm">
+          {leagues.map((league) => {
+
+            return (
+              <li key={league.league_id} className="flex justify-between items-center bg-[#2c2d31] p-3 rounded">
+                <div>
+                  <p className="font-medium">{league.name}</p>
+                  <p className="text-gray-400 text-xs">ID: {league.league_id}</p>
+                </div>
+
+                <button
+                  onClick={() => toggleLeagueSelection(league.league_id)}
+                  className={`px-3 py-1 rounded text-xs ${
+                    isLeagueSelected(league.league_id)
+                      ? 'bg-green-600 cursor-default'
+                      : 'bg-teal-600 hover:bg-teal-700'
+                  }`}
+                  disabled={linkedLeagueIds.includes(league.league_id)}
+                >
+                  {isLeagueSelected(league.league_id) ? 'Selected' : 'Link'}
+                </button>
+              </li>
+            );
+          })}
+          </ul>
+        </div>
+      )}
   
       {/* Modals */}
-      <LinkSleeperModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-  
-      <Dialog open={confirmModalOpen} onClose={() => setConfirmModalOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-[#1e1f25] p-6 rounded-lg max-w-sm w-full text-white">
-            <Dialog.Title className="text-lg font-semibold mb-4">Confirm Display Name Change</Dialog.Title>
-            <p className="mb-6 text-sm text-gray-300">
-              Use <strong>{selectedName === "app" ? user.username : user.sleeper_display_name ?? user.display_name}</strong> as your public display name?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={handleConfirmSwitch}
-                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded text-sm"
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => setConfirmModalOpen(false)}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
-    </div>
-  );
+    <LinkSleeperModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      onLinked={handleLinked} // 👈 this is the corrected prop!
+    />
+
+    <Dialog open={confirmModalOpen} onClose={() => setConfirmModalOpen(false)} className="relative z-50">
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="bg-[#1e1f25] p-6 rounded-lg max-w-sm w-full text-white">
+          <Dialog.Title className="text-lg font-semibold mb-4">Confirm Display Name Change</Dialog.Title>
+          <p className="mb-6 text-sm text-gray-300">
+            Use <strong>{selectedName === "app" ? user.username : user.sleeper_display_name ?? user.display_name}</strong> as your public display name?
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={handleConfirmSwitch}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded text-sm"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setConfirmModalOpen(false)}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+
+    <Dialog open={isLeagueModalOpen} onClose={() => setIsLeagueModalOpen(false)} className="relative z-50">
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="bg-[#1e1f25] p-6 rounded-lg max-w-md w-full text-white shadow-lg">
+          <Dialog.Title className="text-lg font-semibold mb-4">Select League</Dialog.Title>
+
+          {leagues.length === 0 ? (
+            <p className="text-sm text-gray-400">No leagues found for this account.</p>
+          ) : (
+            <>
+              <ul className="space-y-2">
+                {leagues.map((league) => (
+                  <li
+                    key={league.league_id}
+                    className="flex justify-between items-center bg-[#2c2d31] p-3 rounded"
+                  >
+                    <div>
+                      <p className="font-medium">{league.name}</p>
+                      <p className="text-xs text-gray-400">ID: {league.league_id}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleLeagueSelection(league.league_id)}
+                      className={`px-3 py-1 rounded text-xs ${
+                        isLeagueSelected(league.league_id)
+                          ? "bg-green-600 cursor-default"
+                          : "bg-teal-600 hover:bg-teal-700"
+                      }`}
+                      disabled={linkedLeagueIds.includes(league.league_id)}
+                    >
+                      {isLeagueSelected(league.league_id) ? "Selected" : "Link"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              {selectedLeagueIds.length > 0 && (
+                <div className="mt-4 text-right">
+                  <button
+                    onClick={handleConfirmLeagueLinks}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
+                  >
+                    Confirm ({selectedLeagueIds.length}) Linked
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  </div> // 👈 make sure both modals are inside this
+);
 }

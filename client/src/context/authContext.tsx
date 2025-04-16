@@ -8,6 +8,7 @@ export interface User {
   sleeper_id: string | null;
   sleeper_linked: boolean;
   sleeper_display_name: string | null;
+  league_id?: string;
 }
 
 export interface AuthContextType {

@@ -20,6 +20,7 @@ const PORT = process.env.PORT || 3000;
 // Needed because you're using ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const clientBuildPath = path.join(__dirname, "../../client/dist");
 
 // DB Model Initialization
 //const models = initModels(sequelize);
@@ -39,14 +40,18 @@ app.use('/api', payoutRoutes);
 app.use('/api', sideBetRoutes);
 app.use('/api/sleeper', sleeperRoutes);
 
-// Static File Serving
-const clientBuildPath = path.join(__dirname, "../../client/dist");
-app.use(express.static(clientBuildPath));
+//app.use(express.static(clientBuildPath));
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(clientBuildPath));
+  app.get("*", (_, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
 
 // Fallback route for SPA (React Router)
-app.get("*", (_, res) => {
-  res.sendFile(path.join(clientBuildPath, "index.html"));
-});
+//app.get("*", (_, res) => {
+//  res.sendFile(path.join(clientBuildPath, "index.html"));
+//});
 
 // Sync DB + Start Server
 sequelize.sync({ force: forceDatabaseRefresh }).then(() => {

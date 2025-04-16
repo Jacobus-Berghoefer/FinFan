@@ -13,9 +13,10 @@ interface SleeperUser {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onLinked?: () => void;
 }
 
-export default function LinkSleeperModal({ isOpen, onClose }: Props) {
+export default function LinkSleeperModal({ isOpen, onClose, onLinked }: Props) {
   const { user, setUser } = useAuth();
   const [sleeperUsername, setSleeperUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,9 +63,16 @@ export default function LinkSleeperModal({ isOpen, onClose }: Props) {
       if (res.ok) {
         toast.success("Sleeper account linked!", { id: toastId });
         setUser({
-          ...data,
-          sleeper_display_name: data.sleeper_display_name ?? user.sleeper_display_name,
+          ...user,
+          sleeper_id: sleeperUser.user_id,
+          avatar: sleeperUser.avatar,
+          sleeper_display_name: sleeperUser.display_name,
+          sleeper_linked: true,
+          display_name: useSleeperName ? sleeperUser.display_name : user.display_name,
         });
+        if (onLinked) {
+          onLinked(); // 👈 fetch leagues immediately after linking
+        }
         onClose();
       } else {
         toast.error(data.error || "Failed to link account", { id: toastId });

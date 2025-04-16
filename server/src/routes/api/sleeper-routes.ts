@@ -5,7 +5,7 @@ import sequelize from '../../config/connection.js';
 import type { SleeperUser } from '../../types/sleeper.js';
 import type { IUserInstance } from '../../models/user.js';
 import type { ILeagueInstance } from '../../models/league.js';
-
+import { getCurrentSleeperSeason } from '../../utils/getSleeperSeason.js';
 
 const router = Router();
 const models = initModels(sequelize);
@@ -99,6 +99,32 @@ router.post('/link', async (req, res) => {
   } catch (err) {
     console.error('Error linking Sleeper account:', err);
     return res.status(500).json({ error: 'Failed to link Sleeper account' });
+  }
+});
+
+// GET /api/sleeper/user/leagues
+router.get('/user/leagues', async (req, res) => {
+  const session = req.cookies?.session;
+
+  if (!session || !session.id) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const user = await models.User.findByPk(session.id) as IUserInstance | null;
+    if (!user || !user.sleeper_id) {
+      return res.status(404).json({ error: 'Sleeper account not linked' });
+    }
+
+    const season = getCurrentSleeperSeason();
+    console.log("Fetching leagues for season:", season);
+    const response = await fetch(`https://api.sleeper.app/v1/user/${user.sleeper_id}/leagues/nfl/${season}`);
+    const leagues = await response.json();
+
+    return res.json(leagues);
+  } catch (err) {
+    console.error("Failed to fetch Sleeper leagues:", err);
+    return res.status(500).json({ error: 'Could not fetch leagues from Sleeper' });
   }
 });
 

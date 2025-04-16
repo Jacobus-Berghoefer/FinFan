@@ -112,9 +112,7 @@ router.get('/session', async (req, res) => {
       return res.status(401).json({ authenticated: false });
     }
 
-    return res.json({
-      authenticated: true,
-      user: {
+      return res.json({
         id: user.id,
         username: user.username,
         display_name: user.display_name,
@@ -122,8 +120,8 @@ router.get('/session', async (req, res) => {
         avatar: user.avatar,
         sleeper_linked: user.sleeper_linked,
         sleeper_display_name: user.sleeper_display_name,
-      },
-    });
+      });
+      
   } catch (err) {
     console.error("Session fetch failed:", err);
     return res.status(500).json({ error: "Failed to retrieve session user" });

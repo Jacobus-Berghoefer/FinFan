@@ -9,6 +9,7 @@ import { PayoutFactory } from './payout.js';
 import { UserLeagueStatsModel } from './userLeagueStats.js';
 import { SideBetModel } from './sidebet.js';
 import { SideBetEntryModel } from './sidebetEntry.js';
+import userLeagueModel from "./userLeagues.js";
 
 export function initModels(sequelize: Sequelize) {
   const User = UserFactory(sequelize);
@@ -20,6 +21,7 @@ export function initModels(sequelize: Sequelize) {
   const UserLeagueStats = UserLeagueStatsModel(sequelize);
   const SideBet = SideBetModel(sequelize);
   const SideBetEntry = SideBetEntryModel(sequelize);
+  const UserLeague = userLeagueModel(sequelize);
 
   // Associations
   User.hasMany(BuyIn, { foreignKey: 'user_id' });
@@ -56,6 +58,18 @@ export function initModels(sequelize: Sequelize) {
   User.hasMany(SideBetEntry, { foreignKey: 'user_id' });
   SideBetEntry.belongsTo(User, { foreignKey: 'user_id' });
 
+  User.belongsToMany(League, {
+    through: UserLeague,
+    foreignKey: "user_id",
+    otherKey: "league_id",
+  });
+  
+  League.belongsToMany(User, {
+    through: UserLeague,
+    foreignKey: "league_id",
+    otherKey: "user_id",
+  });
+
   return {
     User,
     League,
@@ -66,6 +80,7 @@ export function initModels(sequelize: Sequelize) {
     UserLeagueStats,
     SideBet,
     SideBetEntry,
+    UserLeague,
   };
 }
 
