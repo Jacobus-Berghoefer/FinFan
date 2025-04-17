@@ -99,21 +99,41 @@ router.post('/link-league', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    //user.league_id = league_id;
-    //await user.save();
-    const league = await models.League.findOne({ where: { sleeper_league_id: league_id } }) as ILeagueInstance | null;
-    if (!league) {
-      return res.status(404).json({ error: 'League not found' });
+    // 🔍 Find or create the league
+    await models.League.findOrCreate({
+      where: { sleeper_league_id: league_id },
+      defaults: {
+        league_name: "Unknown League",
+        season_year: new Date().getFullYear().toString(),
+      },
+    });
+
+    // 🧠 Force fresh fetch to ensure league.id exists and FK constraint is satisfied
+    const leagueInstance = await models.League.findOne({
+      where: { sleeper_league_id: league_id },
+    }) as ILeagueInstance;
+
+    if (!leagueInstance || !leagueInstance.id) {
+      return res.status(500).json({ error: 'Failed to retrieve league instance' });
     }
 
-    await user.addLeague(league);
+    console.log('Verified league instance:', leagueInstance?.toJSON?.());
+    console.log('User ID:', user.id);
 
+    // 👥 Link the user to the league
+    await user.addLeague(leagueInstance);
+
+    // 🔁 Return updated list of linked leagues
     const updatedLeagues = await user.getLeagues({
       attributes: ['sleeper_league_id', 'league_name', 'season_year'],
       joinTableAttributes: [],
     });
 
-return res.json(updatedLeagues);
+    return res.json({
+      success: true,
+      message: `League ${league_id} linked successfully.`,
+      leagues: updatedLeagues,
+    });
   } catch (err) {
     console.error("Error linking league:", err);
     return res.status(500).json({ error: 'Failed to link league' });

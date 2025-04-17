@@ -162,7 +162,7 @@ export default function MyProfile() {
     const toastId = toast.loading("Linking leagues...");
   
     try {
-      const results = await Promise.all(
+      const responses = await Promise.all(
         selectedLeagueIds.map((id) =>
           fetch("/api/user/link-league", {
             method: "POST",
@@ -173,11 +173,17 @@ export default function MyProfile() {
         )
       );
   
-      const anyFailed = results.some((res) => !res.ok);
+      const jsonResults = await Promise.all(responses.map(res => res.json()));
+      const anyFailed = responses.some((res) => !res.ok);
+      const anyCreated = jsonResults.some((res) => res.newly_created === true);
+  
       if (anyFailed) {
         toast.error("Some leagues failed to link", { id: toastId });
       } else {
-        toast.success("Leagues linked successfully!", { id: toastId });
+        const message = anyCreated
+          ? "Leagues linked (some newly added 🎉)"
+          : "Leagues linked successfully!";
+        toast.success(message, { id: toastId });
       }
   
       await fetchUserLeagues(); // Refresh league state

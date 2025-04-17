@@ -5,12 +5,6 @@ import cors from 'cors';
 import sequelize from './config/connection.js';
 import routes from './routes/index.js'; // Make sure this is a .ts file
 //import { initModels } from './models/index.js';
-import buyinRoutes from './routes/api/buyin-routes.js';
-import matchupRoutes from './routes/api/matchup-routes.js';
-import betRoutes from './routes/api/bet-routes.js';
-import payoutRoutes from './routes/api/payout-routes.js';
-import sideBetRoutes from './routes/api/sidebet-routes.js';
-import sleeperRoutes from './routes/api/sleeper-routes.js';
 import cookieParser from 'cookie-parser';
 
 const forceDatabaseRefresh = false;
@@ -32,13 +26,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/api', routes); // ✅ Only mount API routes under /api
-app.use('/api', buyinRoutes);
-app.use('/api', matchupRoutes);
-app.use('/api', betRoutes);
-app.use('/api', payoutRoutes);
-app.use('/api', sideBetRoutes);
-app.use('/api/sleeper', sleeperRoutes);
+app.use('/api', routes); 
 
 //app.use(express.static(clientBuildPath));
 if (process.env.NODE_ENV === 'production') {
